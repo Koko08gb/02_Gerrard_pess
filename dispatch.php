@@ -140,7 +140,7 @@ $mysqli->close();
 
 }		
 // retrieve from patrol table those patrol cars that are 2:Patrol or 3:Free
-$sql = "SELECT patrolcar_id, patrolcar_status_desc FROM patrolcar JOIN patrolcar_status ON patrolcar.patrolcar_status_id=patrolcar_status.patrolcar_status_id='3'";
+$sql = "SELECT patrolcar_id, patrolcar_status_desc FROM patrolcar JOIN patrolcar_status ON patrolcar.patrolcar_status_id=patrolcar_status.patrolcar_status_id WHERE patrolcar.patrolcar_status_id='2' OR patrolcar.patrolcar_status_id='3'";
 
 if (!($stmt = $mysqli->prepare($sql))) {
 	die("Prepare failed: ".$mysqli->errno);
@@ -148,11 +148,15 @@ if (!($stmt = $mysqli->prepare($sql))) {
 if (!$stmt->execute()) {
 	die("Execute failed: ".$stmt->errno);
 }
-if (!($resultset = $mysqli->prepare($sql))) {
-	die("Getting result set failed: ".$mysqli->errno);
+if (!($resultset = $stmt->get_result())) {
+	die("Getting result set failed: ".$stmt->errno);
 }
-$patrolcarArray[$row['patrolcar_id']] = $row['patrolcar_status_desc'];
+$patrolcarArray;
 
+while ($row = $resultset->fetch_assoc()) {	
+   $patrolcarArray[$row['patrolcar_id']] = $row['patrolcar_status_desc'];
+
+}
 $stmt->close();
 $resultset->close();
 $mysqli->close();
@@ -167,6 +171,8 @@ $mysqli->close();
 				     foreach($patrolcarArray as $key=>$value){
 				?>
                 <tr>
+				    <td><input type="checkbox" name="chkPatrolcar[]"
+					    value="<?php echo $key?>"></td>
 				    <td><?php echo $key ?></td>
 					<td><?php echo $value ?></td>
 					</tr>

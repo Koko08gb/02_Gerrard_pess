@@ -11,7 +11,7 @@
  {
 	 
      var x=document.forms["frmLogCall"]["contact no"].value;
-	 if(x == null || X="")
+	 if(x == null || x=="")
 	 {
 		 alert("Contact No. is required");
 		 return false;

@@ -10,22 +10,26 @@
 	require_once 'db.php'; 
 	
  // connect to a database connection
-     $mysquli = mysql_connect(DB_SERVER, DB_USER, DB,PASSWORD, DB_DATABASE);
+     $mysquli = mysqli_connect(DB_SERVER, DB_USER, DB,PASSWORD, DB_DATABASE);
   
  // Check connection
       if ($mysqli->connect_errno) { 
-	    die("Failed to connect to mySQL: ".$mysqli->connect_errno);
+	    die("Failed to connect to MySQL: ".$mysqli->connect_errno);
 }
 
   //update patrol car status 
-  $sql = "Update patrolcar SET patrolcar_status_id = ? WHERE patrolcar_id = ? ";
+  $sql = "UPDATE patrolcar SET patrolcar_status_id = ? WHERE patrolcar_id = ? ";
   
   if (!($stmt = $mysqli->prepare($sql))) { 
 	    die("Prepare failed : ".$mysqli->errno);
 }
-  if ($mysqli->connect_errno) { 
-	    die("Failed to connect to mySQL: ".$mysqli->connect_errno);
+  if ($stmt->bind_parm('ss', $_POST['patrolCarStatus'], $_POST['patrolCarId'])) { 
+	    die("Binding parameters failed: ".$stmt->errno);
 }
+  if (!$stmt->excute()) { 
+	    die("Update patrolcar table failed : ".$stmt->errno);
+}
+  
 
    // if patrol car status is Arrived (4) then capture the time of arrival
     if ($_POST["patrolCarStarus"] == '4'){
@@ -35,9 +39,9 @@
 			 
     if (!($stmt = $mysqli->prepare($sql))) { 
 	    die("Prepare failed : ".$mysqli->errno);			 
-}
+	}
 
-    if (!$stmt->bind_parm('ss', $_POST['patrolCarStarus'], $_POST['patrolCarId'])) { 
+    if (!$stmt->bind_parm('s', $_POST['patrolCarId'])){
 	    die("Binding parameters failed : ".$stmt->errno);
 	}
 
@@ -45,7 +49,7 @@
 	    die("Update dispatch table failed : ".$stmt->errno);
 	}
 
-	} else if ($_POST["patrolCarStarus"] == '3'){ // else if patrol car status is FREE (3) then capture the time of completion
+	} else if ($_POST["patrolCarStatus"] == '3'){ // else if patrol car status is FREE (3) then capture the time of completion
 	
 	   // First, retrieve the incident ID from dispatch table handled by that patrol car 
 	   $sql = "SELECT incident_id FROM dispatch WHERE time_completed is NULL AND patrolcar_id = ?";
@@ -54,21 +58,18 @@
 	    die("Prepare failed : ".$mysqli->errno);
 	}
 
-	if (!$stmt->bind_parm('s', $_POST)($sql)) { 
+	if (!$stmt->bind_parm('s', $_POST)['patrolCarId']) { 
 	    die("Binding parameters failed : ".$stmt->errno);
 	}
 
     if (!$stmt ->execute()) { 
-	    die("Update dispatch table failed : ".$stmt->errno);
+	    die("Execute failed failed : ".$stmt->errno);
 	}
 	
 	if (!($resultset = $stmt->get_result())) { 
 	    die("Getting result set failed : ".$stmt->errno);
 	}
 
-    if (!($resultset = $stmt->get_result())) { 
-	    die("Getting result set failed : ".$stmt->errno);
-	}
 	
 	$incidentId;
 	
@@ -84,7 +85,7 @@
 	    die("Prepare failed : ".$mysqli->errno);
 	}
 
-	if (!$stmt->bind_parm('s', $_POST)($sql)) { 
+	if (!$stmt->bind_parm('s', $_POST)['patrolCarId']) { 
 	    die("Binding parameters failed : ".$stmt->errno);
 	}
 
@@ -94,8 +95,8 @@
 
     // last but not least, update incident table to completed (3) all patrol car attended to it are FREE now 
 
-	$sql = "UPDATE incident SET incident_status_id = '$incidentId'
-	          AND NOT EXISTS (SELECT * FROM dispatch WHERE time_completed IS NULL AND incident_id = '$incidentId')";
+	$sql = "UPDATE incident SET incident_status_id = '3' WHERE
+	'$incidentId' AND NOT EXISTS (SELECT * FROM dispatch WHERE time_completed IS NULL AND incident_id = '$incidentId')";
 
 	if (!($stmt = $mysqli->prepare($sql))) { 
 	    die("Prepare failed 11 : ".$mysqli->errno);
@@ -129,6 +130,7 @@ if (!isset($_POST["btnSearch"])){
 	  <table class="ContentStyle">
         <tr></tr>
 		<tr>
+		    <td>Patrol car ID :</td>
 		    <td><input type="text" name="patrolcarId" id="patrolcarId"></td>
 			
 			<td><input type="submit" name="btnSearch" id="btnSearch" value="Search"></td>
@@ -136,17 +138,16 @@ if (!isset($_POST["btnSearch"])){
 		</table>
 </form>
 <?php
-} else	{
-
- // post back here after clicking the btnSearch button
+} else	
+		{ // post back here after clicking the btnSearch button
      require_once 'db.php';
 	 
  // connect to a database connection
-     $mysqli = mysqli_connect(DB_SERVER, DB_USER, DB,PASSWORD, DB_DATABASE);
+     $mysqli = mysqli_connect(DB_SERVER, DB_USER, DB_PASSWORD, DB_DATABASE);
   
  // Check connection
       if ($mysqli->connect_errno) { 
-	    die("Failed to connect to mySQL: ".$mysqli->connect_errno);
+	    die("Failed to connect to MySQL: ".$mysqli->connect_errno);
 }
 
     // retrieve patrol car detail
@@ -155,7 +156,7 @@ if (!isset($_POST["btnSearch"])){
   if (!($stmt = $mysqli->prepare($sql))) { 
 	    die("Prepare failed : ".$mysqli->errno);
 }
-  if (!($stmt->bind_parm('s', $_POST)($sql))) { 
+  if (!$stmt->bind_param('s', $_POST['patrolCarId'])) { 
 	    die("Binding parameters failed : ".$stmt->errno);
 }
 
@@ -169,8 +170,8 @@ if (!isset($_POST["btnSearch"])){
 
    if ($resultset->num_rows == 0) {
 	   ?>
-	      <script type="text/javascript">window.location="./logcall.php";</script>
-		  <?php {
+	      <script type="text/javascript">window.location="./update.php";</script>
+   <?php }
 			  
 		// else if the patrol car found
         $patrolCarId;
@@ -182,9 +183,9 @@ if (!isset($_POST["btnSearch"])){
 		}
 		
 		// retrieve from patrolcar_starus table for populating the combo box
-		$sql = "SELECT * FROM patrolcar_starus_id";
-		if (!($stmt = $mysqli->prpare($sql))) {
-			die("Prepare failed: ".$stmt->errno);
+		$sql = "SELECT * FROM patrolcar_starus";
+		if (!($stmt = $mysqli->prepare($sql))) {
+			die("Prepare failed: ".$mysqli->errno);
 		}
 
 		if (!$stmt ->execute()) { 
@@ -195,12 +196,12 @@ if (!isset($_POST["btnSearch"])){
 	        die("Getting result set failed : ".$stmt->errno);
 }
    	
-    $patrolCarStarusId;; // an array variable
+    $patrolCarStarusArray;; // an array variable
 
     while ($row = $resultset->fetch_assoc()) {
 		$patrolCarStarusArray[$row['patrolcar_starus_id']] = $row['patrolcar_starus_desc'];
 	}		
-		  }
+
  	$stmt->close();
 	
     $resultset->close();
@@ -243,6 +244,6 @@ if (!isset($_POST["btnSearch"])){
 	</form>
 	
    <?php } 
-   }	?>
+?>
 </body>		  
 </html>
