@@ -6,6 +6,7 @@
  <link href="header_style.css" rel="stylesheet" type="text/css">
  <link href="content_style.css" rel="stylesheet" type="text/css">
  <script type="text/javascript">
+ // test
  function validateForm()
  {
 	 
